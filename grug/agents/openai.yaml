@@ -1,0 +1,4 @@
+interface:
+  display_name: "Grug"
+  short_description: "Maintenance-first coding with minimal complexity"
+  default_prompt: "Use $grug to produce the simplest maintainable solution and call out deliberate non-goals."
