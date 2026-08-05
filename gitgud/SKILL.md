@@ -24,3 +24,4 @@ Always run this checklist before committing or pushing.
 4. Never commit secrets, credentials, or generated/temp files.
 5. Don't amend or force-push published commits.
 6. Keep history linear: rebase on top of the target branch instead of merging into your branch (`git pull --rebase`, never merge commits).
+7. Never use "solved by merge" strategies: when a branch has diverged or has conflicts, resolve by rebasing (`git rebase <target>`) and fixing conflicts commit-by-commit — never by creating a merge commit. We are always rebase based.
