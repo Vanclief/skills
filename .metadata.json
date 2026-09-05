@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "entries": {
+    "orca-cli": {
+      "source": "github.com/stablyai/orca/skills/orca-cli",
+      "type": "github-subdir",
+      "installed_at": "2026-09-05T12:04:43.080818-06:00",
+      "repo_url": "https://github.com/stablyai/orca.git",
+      "subdir": "skills/orca-cli",
+      "version": "af821260",
+      "tree_hash": "cdf89459f89dddf347ee2759ff884c369051f06a",
+      "file_hashes": {
+        "SKILL.md": "sha256:6dcbd69045c74787be3385198750c67223709c5fa63a2ba3cfbbe0403e1219f5"
+      }
+    },
+    "orchestration": {
+      "source": "github.com/stablyai/orca/skills/orchestration",
+      "type": "github-subdir",
+      "installed_at": "2026-09-05T12:04:43.097606-06:00",
+      "repo_url": "https://github.com/stablyai/orca.git",
+      "subdir": "skills/orchestration",
+      "version": "af821260",
+      "tree_hash": "902cc33dd65730b32ac234dd0ae7166d75498b46",
+      "file_hashes": {
+        "SKILL.md": "sha256:19ffdc1fe0d2c97dae845e8d636edb16781453ce2ec26f65a323c492ef90da18"
+      }
+    }
+  }
+}
