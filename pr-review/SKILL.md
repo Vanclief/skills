@@ -1,105 +1,44 @@
 ---
 name: pr-review
-description: "Read only skill for reviewing Pull Requests"
+description: >-
+  Read-only review of pull requests, branches, and diffs. Use when asked to
+  review a PR, branch, or diff, assess a change, or review a PR number or
+  GitHub PR URL. Return prioritized findings without applying patches.
 ---
 
-<!-- @format -->
+Find defects and unnecessary complexity the author can act on. Favor simple data representations, explicit control flow, clear ownership, and local reasoning. Challenge abstractions, layers, and dependencies without a present need. Understand the constraints before recommending deletion; fewer lines alone are not evidence.
 
-You are in READ-ONLY review mode. You must create a review against the provided branch. Return a list of enumerated issues or problems you see with the PR.
+## Boundaries
 
-## Rules
+- Do not edit files, apply or emit patches, change the checkout/index, install dependencies, or publish a review.
+- Read with shell, git, and gh; fetching needed refs/objects is allowed. Before running existing tests/checks, inspect their scripts/configuration. Disposable outputs are fine; rewriting source, lockfiles, or snapshots and mutating shared services are not. Attribute results only to the code actually tested.
 
-- Do not modify any files.
-- Do not apply patches or return a diff with patches
-- Do not run commands that change the repo (no formatting, no installs, no commits).
+## Establish the comparison
 
-These are your guidelines:
+- Resolve repository, head commit, and base. Use `gh pr view` for the PR description/base/head and `gh pr diff` for the change. For a branch, use the stated base or its PR base; otherwise use the repository default and state the assumption. Ask when evidence leaves competing bases, such as stacked branches. Never assume the checkout is the PR.
+- When commits are available, inspect `git diff <base>...<head>`. Read surrounding files at the reviewed revision with `git show <head>:<path>`; exclude unrelated local changes.
 
-## Correctness First
+## Investigate before flagging
 
-- Bugs outrank style: logic errors, unhandled failure paths, boundary conditions.
-- Watch the diff for security issues: unsafe input handling, committed secrets.
-- Behavior changes without tests are worth flagging.
+- Inventory the whole diff, then review in risk order. Trace changed behavior through callers, state changes, error paths, and tests. Check compatibility, migration/deployment ordering, and concurrency where affected.
+- Compare the diff with the description. Flag undisclosed behavior changes when they alter a contract, compatibility, or rollout assumption; explain the consequence.
+- Where input, auth, config, or secrets change, check for injection, missing authorization, exposed secrets, and unsafe deserialization.
+- For a suspected defect, identify a supported input/state, the violated contract, and its consequence. Check the base; seek callers, guards, or tests that disprove it. Report issues introduced or exposed by the change. A clear code trace suffices; distinguish inference from reproduction.
+- For complexity, name the present cost in understanding, debugging, or changing the code and a simpler direction that preserves its constraints. Unfamiliarity, personal taste, and hypothetical needs do not qualify.
+- Check whether tests exercise changed behavior and failures. Flag missing coverage only for a specific nontrivial behavior left unprotected.
+- Consolidate duplicate symptoms. Skip routine lint/format nits, praise, and speculation. Investigate consequential uncertainty or state it as a question. Do not pad or cap findings.
 
-## 0) Prime Directive
+## Report
 
-- Optimize for **low complexity** over cleverness.
-- Prefer the **simplest thing that works**; complexity is the main long-term risk.
+First line: `Reviewed <head> against <base>. Blockers: <x>. Should fix: <y>. Scope: <files/paths examined>.`
 
-## 1) Scope & Solution Shape
+Enumerate findings by impact, with these fields:
 
-- Flag **scope creep**: changes beyond the PR's stated purpose.
-- Question additions that add moving parts for marginal value; prefer **80/20** solutions.
+1. [Blocker] src/billing/refund.py:42 — Refund can exceed the original charge.
+   Scenario: a request amount greater than charge.amount passes validation.
+   Evidence: validate_refund checks only amount > 0; both callers, refund_api.py and refund_cli.py, pass the amount through unchanged.
+   Fix direction: enforce the charge bound in validate_refund.
 
-## 2) Architecture & Abstractions
+Anchor to the smallest relevant changed range. Blocker means demonstrated serious harm or broken core behavior; Should fix means another concrete defect or justified simplification. Severity follows impact, not confidence. For complexity, Scenario names the present cost; give a fix direction only when supported.
 
-- Avoid **early factoring** and speculative abstractions.
-- Let the system’s shape emerge, then refactor around **cut points**:
-  - narrow interfaces
-  - stable boundaries
-  - implementation hidden behind the boundary
-
-## 3) Refactoring Discipline
-
-- Keep refactors **small** and **incremental**.
-- Avoid mixing **behavior changes** + **structural changes** in the same refactor.
-- Don’t introduce new abstraction layers unless payoff is obvious.
-
-## 4) Testing Strategy
-
-- Bugfixes should include a **regression test** that reproduces the bug.
-- Keep E2E tests **few and maintained**; flag flaky suites.
-
-## 5) Chesterton’s Fence Rule
-
-- Before removing/replacing “ugly” code:
-  - understand what constraints it satisfies
-  - find what it’s protecting (tests often reveal this)
-
-## 6) Code Clarity Rules
-
-- Prefer clarity over cleverness.
-- Break complex boolean logic into named intermediates:
-  - improves readability
-  - improves debuggability
-
-## 7) DRY With Restraint
-
-- Duplication can be cheaper than indirection.
-- Avoid “DRY at any cost” when it creates:
-  - hard-to-follow control flow
-  - too-generic frameworks
-  - callback chains
-
-## 8) Locality Over Over-Separation
-
-- Prefer putting logic “on the thing that does the thing.”
-- Avoid scattering behavior across many files/classes when it hurts comprehension.
-
-## 9) Closures, Callbacks, Generics
-
-- Use like salt: valuable, but easy to overdo.
-- Avoid callback-heavy designs that obscure flow.
-- Limit generics to high-value cases (often container-like abstractions), avoid “type-level meta frameworks.”
-
-## 10) Types
-
-- Use types to improve tooling and safe refactors.
-- Avoid type cleverness that increases complexity without real benefit.
-
-## 11) Logging & Ops Hygiene
-
-- Logging:
-  - log major logical branches
-  - include request IDs / correlation IDs
-  - make log level adjustable (ideally dynamically, per user)
-
-## 12) Concurrency
-
-- Treat concurrency as dangerous by default.
-- Prefer simple models (stateless handlers, job queues, low coupling).
-
-## 13) API Design
-
-- Design for the common case first.
-- Layer optional complexity only when necessary; avoid forcing ceremony on callers.
+If none qualify, say: "No actionable findings in the reviewed scope." Separately state checks run/results, consequential open questions, and material gaps, including unreviewed areas. Do not claim merge safety. If asked for a recommendation, qualify it by evidence and coverage.
