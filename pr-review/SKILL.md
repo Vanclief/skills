@@ -11,7 +11,8 @@ Find defects and unnecessary complexity the author can act on. Favor simple data
 ## Boundaries
 
 - Do not edit files, apply or emit patches, change the checkout/index, install dependencies, or publish a review.
-- Read with shell, git, and gh; fetching needed refs/objects is allowed. Before running existing tests/checks, inspect their scripts/configuration. Disposable outputs are fine; rewriting source, lockfiles, or snapshots and mutating shared services are not. Attribute results only to the code actually tested.
+- Read with shell, git, and gh; fetching needed refs/objects is allowed.
+- Run existing tests/checks after inspecting their scripts/configuration. Local disposable side effects are expected: build outputs, temp files, local containers, and databases or schemas the suite itself creates and drops. Do not rewrite source, lockfiles, or snapshots, and do not touch remote services others share, such as production or staging databases, deployed environments, or third-party APIs with real credentials. Attribute results only to the code actually tested.
 
 ## Establish the comparison
 
