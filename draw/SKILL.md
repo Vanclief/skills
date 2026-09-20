@@ -24,7 +24,6 @@ on every app launch.
 
 ```bash
 TOKEN=$(jq -r .token "$HOME/Library/Application Support/tldraw/server.json")
-# Linux: ~/.config/tldraw/server.json   Windows: %APPDATA%\tldraw\server.json
 BASE=http://localhost:7236
 ```
 
@@ -34,25 +33,35 @@ a fresh `pid`.
 
 `GET $BASE/` needs no auth and returns the full API reference in markdown. It is
 the source of truth; read it (or the relevant section) when anything below is not
-enough. Worked recipes live in `api.recipes` (see step 4).
+enough. Worked recipes live in `api.recipes` (see "When you need more").
+
+Both `/api/search` and `/api/doc/<id>/exec` take the code as raw JavaScript
+(`content-type: text/plain`), which avoids JSON escaping. The code runs inside an
+async function; return plain JSON.
 
 ## Workflow
 
 1. **Find the document** and read what is already on it:
 
    ```bash
-   curl -s -X POST $BASE/api/search -H 'content-type: application/json' \
-     -H "authorization: Bearer $TOKEN" \
-     -d '{"code":"const doc = await api.getFocusedDoc(); const page = doc ? await api.getShapes(doc.id) : null; return { doc, viewport: page?.viewport, shapes: page?.shapes.map(s => ({ id: s.id, type: s.type, x: s.x, y: s.y, props: s.props })) ?? [] }"}'
+   curl -s -X POST $BASE/api/search -H 'content-type: text/plain' \
+     -H "authorization: Bearer $TOKEN" --data-binary @- <<'JS'
+   const doc = await api.getFocusedDoc()
+   const page = doc ? await api.getShapes(doc.id) : null
+   return {
+     doc,
+     viewport: page?.viewport,
+     shapes: page?.shapes.map(s => ({ id: s.id, type: s.type, x: s.x, y: s.y, props: s.props })) ?? [],
+   }
+   JS
    ```
 
    `doc.id` is the target for `/exec`. `viewport` tells you where the user is
    looking; place new shapes inside it. To start a brand-new file instead, `POST
    $BASE/api/docs/create` with `{"name":"My board"}` (saved to ~/Documents).
 
-2. **Edit** with `POST $BASE/api/doc/<docId>/exec`. Send raw JavaScript as
-   `text/plain` (avoids JSON escaping). `editor` (live tldraw Editor) and
-   `helpers` are in scope; the code runs inside an async function.
+2. **Edit** with `POST $BASE/api/doc/<docId>/exec`. `editor` (live tldraw Editor)
+   and `helpers` are in scope.
 
    ```bash
    curl -s -X POST "$BASE/api/doc/$DOC/exec" -H 'content-type: text/plain' \
@@ -71,13 +80,19 @@ enough. Worked recipes live in `api.recipes` (see step 4).
    Shapes are raw tldraw SDK records (`TLShapePartial`). Common types: `geo`
    (`props.geo`: rectangle, ellipse, triangle, diamond, ...), `text`, `note`,
    `arrow`. Connect boxes with `helpers.createArrowBetweenShapes(idA, idB)` so
-   arrows are actually bound. `helpers.mermaid(source)` draws a whole diagram.
-   Default styles unless the user asks for color or fill. A typical labeled box
-   is about 300x200 with ~200 gap between shapes.
+   arrows are actually bound. Default styles unless the user asks for color or
+   fill. A typical labeled box is about 300x200 with ~200 gap between shapes.
 
-3. **Verify once** by re-running the step 1 read and checking the new ids are
-   there. Take a screenshot (`api.getScreenshot(doc.id)` returns a file path)
-   only if placement is uncertain or the user asks for visual proof.
+   `helpers.mermaid(source)` draws a whole diagram in one call, but its arrows
+   come corner-pinned with large `bend` values inside a `group`, often routed
+   through neighbouring boxes. Use it only for a diagram you will not rearrange,
+   and screenshot it once. To move its boxes anyway: ungroup, set each arrow's
+   `bend` to 0, and `editor.updateBindings` to `{ isPrecise: false, normalizedAnchor: { x: .5, y: .5 } }`.
+
+3. **Verify once**: re-run the step 1 read to check the new ids are there, and
+   run `return helpers.getLints()` through `/exec`, fixing only lints your edit
+   introduced. Take a screenshot (`api.getScreenshot(doc.id)` returns a file
+   path) only if placement is uncertain or the user asks for visual proof.
 
 4. **Save** only when the doc is local and has a `filePath`: end the snippet with
    `await helpers.saveDoc()`. If `filePath` is `null` the board has never been
@@ -98,6 +113,6 @@ enough. Worked recipes live in `api.recipes` (see step 4).
 ## Gotchas
 
 - Never edit the `.tldraw` file on disk while it is open in the app.
-- `editor.dispatch` is async; wait ~30ms before reading state it changes.
-- A snippet that throws is rolled back; one you stop midway is not.
+- A snippet that throws is rolled back. One stopped with
+  `DELETE /api/doc/<id>/snippets/<snippetId>` is not; undo or compensate by hand.
 - Hand-built `draw` shape segments crash validation; use `compressLegacySegments` from `'tldraw'`.
