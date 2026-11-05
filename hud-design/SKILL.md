@@ -18,7 +18,7 @@ Design for a user who holds nothing in their head and remembers nothing from the
 
 **The look.** Games are the source of the mechanisms, never of the look. The finished screen looks like an ordinary, well-made screen in this product's own design system, only denser and quicker to read: the project's palette, type, components and icon set, flat surfaces, thin borders. No glow, gradients, bevels, textures, emoji, pixel art, medieval or sci-fi styling, sound, or decorative motion. No gamification: no points, streaks, badges, leaderboards, timers that pressure the user, or confetti. If someone could tell from a screenshot that games inspired it, it is wrong.
 
-**Only real data.** Everything on screen comes from data the system really has. Unknown progress is shown as working, without a percentage. No forecast without a measured rate. No "changed since you looked" without a stored last-seen. Where the backend lacks what a region needs, leave the region out and say so in your reply; never fake it and never quietly add state.
+**Only real data.** Every value on screen comes from data the system really has. Unknown progress is shown as working, without a percentage. No forecast without a measured rate. No "changed since you looked" without a stored last-seen. Where the backend lacks what a region needs, never invent the values and never quietly add state. If the region matters to the screen, hold its place with a placeholder: its icon and label in a dashed outline, a dash where each value would go, no sample numbers, and nothing that moves, because a shimmer means loading. If it does not matter, leave it out. Either way, name the missing data in your reply.
 
 Work in two layers, in this order: first what the screen answers, then how each thing is drawn. A screen that follows every drawing rule but leaves a question unanswered is a tidy form, not a HUD.
 
@@ -28,7 +28,7 @@ At any moment, without a click and without reading a sentence, the screen answer
 
 | Question | What answers it | Where games do it |
 |---|---|---|
-| What do I have? | A bar of icon-and-number totals, capacity as used/max | AoE2 resource bar, StarCraft supply `12/15` |
+| What do I have? | A bar of icon-and-number totals along the top edge, capacity as used/max | AoE2 resource bar, StarCraft supply `12/15` |
 | What is happening? | Every running thing shows its own progress on itself | The bar filling on a building under construction |
 | What is next? | The queue in order: in progress, next, waiting, and what each waits on | AoE2 production queue |
 | What is stuck? | The constraint is marked: the stage with work piling up in front of it | Factorio's belt backing up in front of the slow machine |
@@ -37,7 +37,9 @@ At any moment, without a click and without reading a sentence, the screen answer
 | What changed? | A trail of changes since the user last looked | RimWorld's letters, which stay until read |
 | Did that work? | Every action changes the screen at once | A unit selected, a building placed |
 
-Answer every question the screen's data can answer. Where the data has no answer (a settings form has no queue), leave the region out. More mechanisms, by game, are in `patterns.md`.
+Answer every question the screen's data can answer. Where a question does not apply (a settings form has no queue), leave the region out. More mechanisms, by game, are in `patterns.md`.
+
+**The frame stays.** The resource bar and the needs-me control belong to the app, not to one screen. They hold the top edge on every screen: a form or a detail view opens inside that frame, never in place of it. A title or breadcrumb shares the bar and never gets a bar of its own. Where a screen spends something the bar counts (a form that takes cores from a pool), the bar shows the result before the user commits: `12 → 14 / 16`.
 
 1. **Nothing lives in the user's head.** If the user would have to remember it, compare it across two screens, or recall what it was before, it goes on screen. Why: people hold only a few items at once; a screen holds all of them.
 2. **Progress sits on the thing itself.** Anything that takes over a second shows it is working; over ten seconds, which step it is on, and when it ends if that is known. Results arrive on their own: the user never refreshes to find out. Why: a wait with no feedback reads as broken.
@@ -73,13 +75,14 @@ In priority order.
 ## Method
 
 1. Inventory every piece of data the screen carries and classify each: quantity, capacity, rate, time, boolean, pick-from-set, free text, list of items, path, derived, content to read.
-2. Go down the Layer 1 questions. For each, name the region that answers it, or say the data has no answer.
+2. Go down the Layer 1 questions. For each, name the region that answers it, hold its place with a placeholder if the data is missing, or say the question does not apply.
 3. Assign each piece of data a control from the table below and the project's icon for it.
 4. Lay the regions out in fixed positions, controls as cards in a grid, most used first, primary action pinned.
 5. Delete every sentence of explanation. Move what it said into a tooltip or make the control carry it.
 6. Test, and fix what fails:
    - **No text**: hide every label; the screen is still operable. Then restore the one or two word labels.
    - **Five seconds**: after one glance, say what is stuck and what needs you.
+   - **Top edge**: the top bar carries totals the user acts on, not only a title.
    - **No color**: in greyscale, the broken thing and the thing waiting on you are still findable.
    - **Back from lunch**: after an hour away, the screen shows what changed without scrolling a history.
    - **Screenshot**: it looks like the rest of the product, and nothing in it says "game".
