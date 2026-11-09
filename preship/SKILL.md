@@ -19,6 +19,8 @@ This line decides everything below. A question or finding is mechanical when the
 
 Settle mechanical questions yourself and record the assumption. Never pick for the user on a judgement question, and never ask about a mechanical one.
 
+A finding about a comment, a doc page, or the changelog is a defect only when the statement is false or describes behaviour the code does not have. Phrasing, reflow, ordering, and "could be clearer" are wording notes: log them and leave them for the documentation pass. They never cost a review round.
+
 A finding about code outside the change, or a defect the change neither created, made worse, nor exposed, is out of scope: report it and leave it. It becomes a judgement call only when the change cannot be correct without that work.
 
 ## Understand
@@ -33,7 +35,7 @@ Find the checks the repository runs and run them. For each failure, find out whe
 
 Each round:
 
-1. Start two fresh reviewers on the head commit, in parallel where the harness allows, never forks and never a reviewer from an earlier round. Each follows the pr-review skill and the language's skill. Each gets the intent, the user's decisions, the head SHA, the base, and your check results with the baseline failures, which it relies on instead of rerunning the whole suite. The base is `git merge-base <remote>/<base> HEAD`, taken each round because a sync can move it. Neither reviewer gets the other's findings, earlier rounds, or your opinion of the change. Edit nothing until both return.
+1. Start two fresh reviewers on the head commit, in parallel where the harness allows, never forks and never a reviewer from an earlier round. Each follows the pr-review skill and the language's skill. Each gets the intent, the user's decisions, the head SHA, the base, your check results with the baseline failures, which it relies on instead of rerunning the whole suite, and the rule that only a false statement counts in documentation. The base is `git merge-base <remote>/<base> HEAD`, taken each round because a sync can move it. Neither reviewer gets the other's findings, earlier rounds, or your opinion of the change. Edit nothing until both return.
 2. If a reviewer failed, or skipped part of the diff that needs review (generated and vendored files do not), start one replacement for that part. A second failure is a blocker.
 3. Check every finding and open question against the code. Each is confirmed (the defect, or the cost it names, is real), disproven with evidence a reader can check (a cited code path, or a throwaway test kept out of the repository), out of scope, settled by an answer the user already gave, or a judgement call. A finding you can neither confirm nor disprove is a judgement call, and so are two confirmed findings that want opposite things. A disproven finding that returns stays disproven unless it brings evidence your disproof does not answer.
 4. Before fixing a confirmed finding that would undo an earlier fix, recheck the earlier finding. If it was wrong, undo its fix and log the reversal. If both hold, it is a judgement call. Never reverse the same code a second time: that is stuck.
@@ -44,9 +46,13 @@ Any change to the code means another round. A Git sync counts only when it chang
 
 - **Needs judgement.** A finding or question is a judgement call. Stop and ask.
 - **Stuck.** A fix would reverse the same code a second time, or the same finding or broken check is still there after two attempts to fix it. The number of rounds is not a reason to stop: a round that confirms new findings and fixes them is progress. The only limit is a backstop of twenty rounds, counted from the user's last answer.
-- **Clean.** Both reviewers covered the diff, nothing they raised was confirmed or is waiting on the user, and the checks pass. Go to Finish.
+- **Clean.** Both reviewers covered the diff, nothing they raised was confirmed or is waiting on the user, and the checks pass. Go to the documentation pass, then Finish.
 
 Otherwise run the next round. Do not call the change clean to end the loop. The only other stop is a blocker you cannot work around, such as a stop gitgud requires or a reviewer that fails twice: report it as blocked.
+
+## Documentation pass
+
+Once, after the clean round. Read the wording notes in the log and make the edits worth making to comments, docs, and the changelog in one commit, after the checks pass. These edits change no code, so they get no review round and no reviewers; a note that turns out to be a false statement is a defect and goes back to the loop. Fix a false statement in the same round as the code it describes when you can, so this pass stays light. Skip the pass when the log holds no wording notes.
 
 ## Finish
 
@@ -56,6 +62,6 @@ Check its work as you would any subagent's: the diff against the new base must m
 
 ## Report
 
-Open with the ending: `Clean after <n> rounds.`, `Needs your judgement.`, `Stuck after <n> rounds.`, or `Blocked.`, where `<n>` counts every round run. Then say what you changed, the checks run and their results, the checks that could not run, the findings fixed in each round, the findings you disproved with the evidence, the findings left as out of scope or already settled, and the assumptions you made.
+Open with the ending: `Clean after <n> rounds.`, `Needs your judgement.`, `Stuck after <n> rounds.`, or `Blocked.`, where `<n>` counts every round run. Then say what you changed, the checks run and their results, the checks that could not run, the findings fixed in each round, the findings you disproved with the evidence, the findings left as out of scope or already settled, the wording notes you applied and the ones you left, and the assumptions you made.
 
 For a judgement stop, give the exact choice, what each option costs, your recommendation, and what is already done. For a stuck stop, give both positions and the rounds they came from, or what kept failing, and the state the code is in now. For a blocked stop, give the blocker, what is done, and what is not. When the user answers, apply the decision and resume where you stopped; the result still needs a clean round.
