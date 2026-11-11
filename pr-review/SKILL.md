@@ -27,7 +27,7 @@ Find defects and unnecessary complexity the author can act on. Favor simple data
 - For a suspected defect, identify a supported input/state, the violated contract, and its consequence. Check the base; seek callers, guards, or tests that disprove it. Report issues introduced or exposed by the change. A clear code trace suffices; distinguish inference from reproduction.
 - For complexity, name the present cost in understanding, debugging, or changing the code and a simpler direction that preserves its constraints. Unfamiliarity, personal taste, and hypothetical needs do not qualify.
 - Check whether tests exercise changed behavior and failures. Flag missing coverage only for a specific nontrivial behavior left unprotected.
-- Consolidate duplicate symptoms. Skip routine lint/format nits, praise, and speculation. Investigate consequential uncertainty or state it as a question. Do not pad or cap findings.
+- Consolidate duplicate symptoms. Skip routine lint/format nits, praise, and speculation. A comment, doc, or changelog finding needs a false statement or behaviour the code does not have; wording preferences are not findings. Investigate consequential uncertainty or state it as a question. Do not pad or cap findings.
 
 ## Report
 
