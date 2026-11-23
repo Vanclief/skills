@@ -6,70 +6,84 @@ description: >-
   guard protected branches.
 ---
 
-Work reaches protected branches only through PRs. It is done on task branches with linear, rebase-based history, and each logical change is committed and pushed as soon as its checks pass, without asking first.
+This skill is the user's standing request to commit and push task branches. Do both for each logical change as soon as its checks pass, without asking, even where other instructions say to commit only on request. History stays linear and rebase-based.
 
-The repository's own instructions and the user's explicit instructions override the defaults below. The Never list is the exception: it gives way only to an instruction from the user that names the specific branch or action.
+The repository's own instructions and the user's explicit instructions override the defaults below. The Never list gives way only to an explicit instruction from the user that names both the branch and the action, and only for that action: "commit to main" allows a commit and a normal push to `main`, never rewriting or force-pushing it.
 
 ## Never
 
-- Commit to, push to, or rewrite `main`, `master`, `production`, `staging`, or any other branch the repository protects. Other people deploy and branch from these.
-- Stage with `git add -A` or `git add .`. Staging files by name is what keeps unrelated work, secrets, and accidental artifacts out of a commit.
-- Bypass hooks through `--no-verify`, configuration, or environment. A failing hook is a check to satisfy.
-- Force-push without an explicit lease; see Rewriting published history.
-- Merge to resolve divergence. History stays linear, so divergence is resolved by rebasing. Merging a PR you were authorized to merge is a different thing and is fine.
-- Pick `ours` or `theirs` blindly in a conflict, or leave a merge, rebase, or cherry-pick unfinished.
+- Commit to, push to, or rewrite `main`, `master`, `production`, `staging`, the repository's default branch, or any branch it protects (`gh api repos/{owner}/{repo}/branches/<branch> --jq .protected`). Other people deploy and branch from these.
+- Stage with `git add -A` or `git add .`. Staging by name is what keeps unrelated work, secrets, and accidental artifacts out of a commit.
+- Bypass hooks through `--no-verify`, configuration, or environment. A failing hook is a check to satisfy or report.
+- Force-push without an explicit lease (see Rewriting published history).
+- Merge to resolve divergence; rebase instead, because history stays linear. Merging a PR you were authorized to merge is a different thing and is fine.
+- Pick `ours` or `theirs` blindly in a conflict, or leave unfinished a merge, rebase, cherry-pick, or similar operation that you started.
+- Discard, reset, or overwrite uncommitted changes you did not make. They are the user's work.
+- Make WIP or checkpoint commits on your own, whether to save progress or to clear the tree for a sync.
 
 ## Start
 
-Run `git status` and `git branch --show-current`. If a merge, rebase, cherry-pick, or similar operation is already in progress and you did not start it, stop and report it. Neither continue nor abort it: someone else is midway through it.
+Run `git status` and `git branch --show-current`.
 
-If `HEAD` is detached, create a branch as described below before committing, so the commits are not left unreachable. If the repository has no remote, commit locally, skip the fetch and push steps, and say so in your report.
+- At any point, if a merge, rebase, cherry-pick, or similar operation is in progress that you did not start, or you cannot tell whether you did, stop and report it. Neither continue nor abort it: someone else is midway through it.
+- If `HEAD` is detached, create the branch where you are (`git switch -c <name>`) and say which commit it starts from. That commit is its base: branching from the default branch instead would leave it behind, and so would rebasing onto another base unasked.
+- If the repository has no remote, branch from the local default branch, commit locally, skip the fetch and push steps, and say so in your report.
 
 ## Choose the branch
 
-Changes requested on an existing PR or branch go to its head branch in its head repository, whoever created it. Check it out (`gh pr checkout <n>` for a PR), commit there, and push there. Open no side branch and no second PR unless asked, because a second destination splits the review. If the head cannot be resolved or you cannot push to it, keep the work local and report; never substitute another destination.
+Changes requested on an existing PR or branch go to its head branch in its head repository, whoever created it. Check it out (`gh pr checkout <n>` for a PR), commit there, and push there. Open no side branch and no second PR unless asked, because a second destination splits the review. If the head cannot be resolved or you cannot push to it (a fork PR whose `maintainerCanModify` is false, for example), keep the work local and report; never substitute another destination.
 
 All other work gets a dedicated, unprotected branch:
 
-- Reuse an existing branch only for the same unmerged scope it was created for. When in doubt, create a new one and say so.
+- If you start on a branch that has no commits beyond its base and is not on the remote, typically one a worktree tool created for this task, use it. If it tracks the base (`git rev-parse --abbrev-ref @{u}` shows `origin/main` or similar), run `git branch --unset-upstream` first.
+- Otherwise reuse an existing branch only for the same unmerged scope it was created for. When in doubt, create a new one and say so.
 - Fetch, then branch from the base the repository designates, or otherwise from origin's default branch (`git ls-remote --symref origin HEAD`). Stack on another branch only when asked.
-- Create it with `git switch --no-track -c <name> <remote>/<base>`. `--no-track` stops the new branch from tracking the base, so a bare `git push` can never land there.
+- Create it with `git switch --no-track -c <name> <remote>/<base>`. `--no-track` keeps the base from becoming the upstream, so a bare `git push` cannot target it under default settings.
 - Name it by the repository's convention, or otherwise `<type>/<short-kebab-summary>` with type one of feat, fix, chore, refactor, docs. Include a ticket ID when one was supplied.
 
-A branch is shared when there is evidence that others use or depend on its history: commits by other authors, a branch or PR stacked on it, or the user saying so. On a shared branch, never force-push, never amend published commits, and rebase only your own unpublished commits.
+A branch is shared when there is evidence that others use or depend on its history, for example commits by other people on the branch itself (not its base), a branch or PR stacked on it, or the user saying so. On a shared branch, never force-push, never amend published commits, and rebase only your own unpublished commits.
 
 ## Sync
 
-Fetch `origin` and any other relevant remote before editing, then bring the branch up to date with its own remote:
+Before editing and before every push, fetch `origin` and any other relevant remote, then bring the branch up to date with its own remote:
 
-- Only behind: fast-forward.
-- Diverged: rebase your own unpublished commits onto the remote tip. If the remote was rewritten, or the rebase would rewrite commits that are already published, stop and report instead.
-- Not pushed yet: bring it up to date with the latest tip of its base.
+- Only behind: fast-forward (`git merge --ff-only --autostash <remote>/<branch>`).
+- Diverged because you rewrote pushed commits yourself: do not rebase. Follow Rewriting published history: push with the lease if the remote tip is still the SHA you saved, and use its step 3 if the tip has moved.
+- Diverged any other way: rebase your own unpublished commits onto the remote tip (`git rebase --autostash <remote>/<branch>`). If the remote was rewritten (`git fetch` reports a forced update), or the rebase would rewrite commits that are already published, stop and report instead.
+- Not pushed yet: rebase onto the latest tip of its base (`git rebase --autostash <remote>/<base>`).
 
-If the branch has an open PR (`gh pr view`), also fetch the PR's actual base. Rebase onto it only when the PR conflicts with the base, the repository requires an up-to-date branch to merge, or the user asks. Otherwise report how far behind it is and carry on: every rebase of a pushed PR forces a push that reruns CI and loses reviewers their place. On a shared branch, report the lag and continue from the synced head even then. If the base cannot be determined, say so and sync only against the branch's own remote.
+If the branch has an open PR (`gh pr view`), also fetch the PR's actual base. Rebase onto it only when the PR conflicts with the base, the repository requires an up-to-date branch to merge, or the user asks; `gh pr view --json mergeable,mergeStateStatus` reports `CONFLICTING` and `BEHIND` for the first two. Otherwise report how far behind it is and carry on: every rebase of a pushed PR forces a push that reruns CI and loses reviewers their place. For the same reason, add new commits to an open PR rather than amending pushed ones. On a shared branch, report the lag and continue from the synced head even then. If `gh pr view` or the base fetch fails, say so and sync only against the branch's own remote.
 
-Uncommitted work must come through the sync intact. If the sync cannot complete, do not start editing; report what blocked it.
+Uncommitted work must come through the sync intact: after an `--autostash`, confirm it was reapplied (`git stash list`), and if a switch or rebase refuses because of it, stop and report. If a sync cannot complete, at the start or before a push, stop editing and pushing and report what blocked it.
 
-## Commit and push
+## Commit
 
-Do this for each logical change as soon as it is finished:
+For each logical change, as soon as it is finished:
 
-1. Review `git diff` and `git diff --cached`. Stage the task's changes by file name, leave unrelated work alone, and keep secrets and accidental artifacts out.
-2. Run the required checks: the tests, lint, typecheck, and build that the repository documents or its CI runs for the files touched. If you can find none, say so in your report.
-3. Commit, following the repository's conventions. Each commit is one complete logical change; do not commit unfinished work just to save progress. If a hook edits files, review its edits and re-stage only the ones that belong.
-4. Repeat Sync. If it changed the branch, rerun the checks on the result.
-5. Check the remote, the destination, and the outgoing commits before pushing: `git push origin HEAD:main` targets `main` whatever branch you are on. Set upstream on the first push (`-u`). If the push is denied, or `origin` is not the user's to write to, keep the commits local and report; never fork or push to another remote unasked.
-6. Verify with `git log -1 --stat`, `git status`, and the push output.
+1. Review `git diff` and `git diff --cached`. Stage the task's changes by file name, leave unrelated work alone, and keep secrets and accidental artifacts out. If a file holds someone else's uncommitted edits as well as yours, stage only your hunks.
+2. Run the required checks: the ones the user asked for and the ones the repository says to run before committing, plus any CI checks that can run locally for this change. Report any you could not run, or that none exist. A failure already present on the base is not yours to fix: confirm your change adds none, and report it.
+3. Commit, following the repository's conventions. If a hook edits files, review its edits and re-stage only the ones that belong. If a hook blocks the commit for reasons outside your change, leave the change uncommitted and report.
 
-At the end of the task, repeat Sync and check the result once more. Pushing the branch is where this ends: open a PR only when asked.
+A change that cannot pass its checks stays uncommitted. Report it with the failure and continue with changes that do not depend on it.
+
+## Push
+
+Every push goes through these steps, including force-pushes and retries:
+
+1. Repeat Sync. If it changed the branch, rerun the checks on the result.
+2. Check the remote, the destination, and the outgoing commits (`git log <remote>/<branch>..HEAD`, or `<remote>/<base>..HEAD` before the first push), and name the destination explicitly: `git push origin HEAD:main` targets `main` whatever branch you are on. For a branch you created, the first push is `git push -u origin HEAD`. For a PR checked out with `gh pr checkout`, push to the remote it configured (`git config branch.<branch>.remote`), which for a fork PR is the fork and not `origin`.
+3. If the push is denied, or the destination is not the user's to write to, keep the commits local and report. Never fork, add a remote, or push elsewhere to get around it.
+4. Verify with `git log -1 --stat`, `git status`, and the push output. `git ls-remote <remote> refs/heads/<branch>` should match `git rev-parse HEAD`.
+
+At the end of the task, repeat Sync; if it changed the branch, rerun the checks and push again. Pushing the branch is where the task ends: open a PR only when asked.
 
 ## Rewriting published history
 
 Amending or rebasing commits that are already pushed means the next push is a force-push. Never do this on a shared branch. Elsewhere:
 
-1. Before rewriting, fetch and save the remote tip your work already includes.
-2. Push with `--force-with-lease=<branch>:<saved-sha>`, never plain `--force`. The explicit SHA makes the push fail if anyone pushed after you looked.
-3. If the push is rejected, fetch and reassess whether the branch is shared. If the remote only added commits on top of the saved SHA, bring them over with `git cherry-pick <saved-sha>..<new-sha>`, check the result, and retry once with the lease on `<new-sha>`. In any other case, or if the retry is rejected too, report.
+1. Before rewriting, fetch and confirm your branch contains the remote tip (`git merge-base --is-ancestor <remote>/<branch> HEAD`); if it does not, Sync first. Save that tip's SHA (`git rev-parse <remote>/<branch>`).
+2. Push with `--force-with-lease=<branch>:<saved-sha>`, never plain `--force`, and pass the SHA itself, not a ref name. The explicit SHA makes the push fail if anyone pushed after you looked; a bare lease or a ref name is defeated by any fetch in between.
+3. If the push is rejected, or the remote tip moved before you pushed, fetch. Recover only if all of these hold: the new commits sit on top of the saved SHA (`git merge-base --is-ancestor <saved-sha> <new-sha>`), none is a merge (`git rev-list --merges <saved-sha>..<new-sha>` is empty), and all are your own, since anyone else's make the branch shared. Then run `git cherry-pick <saved-sha>..<new-sha>`, rerun the checks, and retry once with the lease on `<new-sha>`. Otherwise, or if the retry is rejected too, abort any pick in progress, keep your rewrite local, and report.
 
 ## Conflicts
 
