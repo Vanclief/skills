@@ -6,9 +6,9 @@ description: >-
   guard protected branches.
 ---
 
-This skill is the user's standing request to commit and push task branches. Do both for each logical change as soon as its checks pass, without asking, even where other instructions say to commit only on request. History stays linear and rebase-based.
+This skill is the user's standing request to commit and push task branches. Do both for each logical change as soon as its checks pass, without asking, even where general agent instructions say to commit only on request. History stays linear and rebase-based.
 
-The repository's own instructions and the user's explicit instructions override the defaults below. The Never list gives way only to an explicit instruction from the user that names both the branch and the action, and only for that action: "commit to main" allows a commit and a normal push to `main`, never rewriting or force-pushing it.
+The repository's own instructions and the user's explicit instructions override this and the defaults below. The Never list gives way only to an explicit instruction from the user that names both the branch and the action, and only for that action: "commit to main" allows a commit and a normal push to `main`, never rewriting or force-pushing it.
 
 ## Never
 
@@ -48,13 +48,13 @@ A branch is shared when there is evidence that others use or depend on its histo
 Before editing and before every push, fetch `origin` and any other relevant remote, then bring the branch up to date with its own remote:
 
 - Only behind: fast-forward (`git merge --ff-only --autostash <remote>/<branch>`).
-- Diverged because you rewrote pushed commits yourself: do not rebase. Follow Rewriting published history: push with the lease if the remote tip is still the SHA you saved, and use its step 3 if the tip has moved.
-- Diverged any other way: rebase your own unpublished commits onto the remote tip (`git rebase --autostash <remote>/<branch>`). If the remote was rewritten (`git fetch` reports a forced update), or the rebase would rewrite commits that are already published, stop and report instead.
-- Not pushed yet: rebase onto the latest tip of its base (`git rebase --autostash <remote>/<base>`).
+- Diverged because you rewrote pushed commits yourself: do not rebase; Sync is done. The push uses the lease if the remote tip is still the SHA you saved, and step 3 of Rewriting published history if the tip has moved.
+- Diverged any other way: rebase your own unpublished commits onto the remote tip (`git rebase --autostash <remote>/<branch>`). If the remote was rewritten (`git fetch` reports a forced update, or `git reflog <remote>/<branch>` shows one since you last synced), or the rebase would rewrite commits that are already published, stop and report instead.
+- Not pushed yet: rebase onto the latest tip of its base (`git rebase --autostash <remote>/<base>`). A branch started from a detached commit or tag has no newer tip: leave it where it is and use that commit as `<base>`.
 
 If the branch has an open PR (`gh pr view`), also fetch the PR's actual base. Rebase onto it only when the PR conflicts with the base, the repository requires an up-to-date branch to merge, or the user asks; `gh pr view --json mergeable,mergeStateStatus` reports `CONFLICTING` and `BEHIND` for the first two. Otherwise report how far behind it is and carry on: every rebase of a pushed PR forces a push that reruns CI and loses reviewers their place. For the same reason, add new commits to an open PR rather than amending pushed ones. On a shared branch, report the lag and continue from the synced head even then. If `gh pr view` or the base fetch fails, say so and sync only against the branch's own remote.
 
-Uncommitted work must come through the sync intact: after an `--autostash`, confirm it was reapplied (`git stash list`), and if a switch or rebase refuses because of it, stop and report. If a sync cannot complete, at the start or before a push, stop editing and pushing and report what blocked it.
+Uncommitted work must come through the sync intact: after an `--autostash`, confirm it was reapplied. An `autostash` entry left in `git stash list` means it was not, even when the command exits 0. Then, or if a switch or rebase refuses because of uncommitted work, stop and report without touching the stash or the tree. If a sync cannot complete, at the start or before a push, stop editing and pushing and report what blocked it.
 
 ## Commit
 
@@ -64,14 +64,14 @@ For each logical change, as soon as it is finished:
 2. Run the required checks: the ones the user asked for and the ones the repository says to run before committing, plus any CI checks that can run locally for this change. Report any you could not run, or that none exist. A failure already present on the base is not yours to fix: confirm your change adds none, and report it.
 3. Commit, following the repository's conventions. If a hook edits files, review its edits and re-stage only the ones that belong. If a hook blocks the commit for reasons outside your change, leave the change uncommitted and report.
 
-A change that cannot pass its checks stays uncommitted. Report it with the failure and continue with changes that do not depend on it.
+A change that adds a check failure stays uncommitted. Report it with the failure and continue with changes that do not depend on it.
 
 ## Push
 
 Every push goes through these steps, including force-pushes and retries:
 
 1. Repeat Sync. If it changed the branch, rerun the checks on the result.
-2. Check the remote, the destination, and the outgoing commits (`git log <remote>/<branch>..HEAD`, or `<remote>/<base>..HEAD` before the first push), and name the destination explicitly: `git push origin HEAD:main` targets `main` whatever branch you are on. For a branch you created, the first push is `git push -u origin HEAD`. For a PR checked out with `gh pr checkout`, push to the remote it configured (`git config branch.<branch>.remote`), which for a fork PR is the fork and not `origin`.
+2. Check the remote, the destination, and the outgoing commits (`git log <remote>/<branch>..HEAD`, or `<remote>/<base>..HEAD` before the first push), and name the destination explicitly: `git push origin HEAD:main` targets `main` whatever branch you are on. For a branch you created, the first push is `git push -u origin HEAD`. For a PR checked out with `gh pr checkout`, push to the remote and branch it configured (`git config branch.<branch>.remote` and `branch.<branch>.merge`), which for a fork PR is usually not `origin`. If that remote is a URL, there is no `<remote>/<branch>` ref: fetch the branch from the URL and use `FETCH_HEAD` wherever this skill says `<remote>/<branch>`. If `merge` is `refs/pull/...`, you cannot push to the head: keep the work local and report.
 3. If the push is denied, or the destination is not the user's to write to, keep the commits local and report. Never fork, add a remote, or push elsewhere to get around it.
 4. Verify with `git log -1 --stat`, `git status`, and the push output. `git ls-remote <remote> refs/heads/<branch>` should match `git rev-parse HEAD`.
 
@@ -83,7 +83,7 @@ Amending or rebasing commits that are already pushed means the next push is a fo
 
 1. Before rewriting, fetch and confirm your branch contains the remote tip (`git merge-base --is-ancestor <remote>/<branch> HEAD`); if it does not, Sync first. Save that tip's SHA (`git rev-parse <remote>/<branch>`).
 2. Push with `--force-with-lease=<branch>:<saved-sha>`, never plain `--force`, and pass the SHA itself, not a ref name. The explicit SHA makes the push fail if anyone pushed after you looked; a bare lease or a ref name is defeated by any fetch in between.
-3. If the push is rejected, or the remote tip moved before you pushed, fetch. Recover only if all of these hold: the new commits sit on top of the saved SHA (`git merge-base --is-ancestor <saved-sha> <new-sha>`), none is a merge (`git rev-list --merges <saved-sha>..<new-sha>` is empty), and all are your own, since anyone else's make the branch shared. Then run `git cherry-pick <saved-sha>..<new-sha>`, rerun the checks, and retry once with the lease on `<new-sha>`. Otherwise, or if the retry is rejected too, abort any pick in progress, keep your rewrite local, and report.
+3. If the push is rejected, or the remote tip moved before you pushed, fetch. Recover only if all of these hold: the new commits sit on top of the saved SHA (`git merge-base --is-ancestor <saved-sha> <new-sha>`), none is a merge (`git rev-list --merges <saved-sha>..<new-sha>` is empty), and all are your own, since anyone else's make the branch shared. Then run `git cherry-pick <saved-sha>..<new-sha>`, rerun the checks, and retry once with the lease on `<new-sha>`, which is now the saved SHA. Otherwise, or if the retry is rejected too, abort any pick in progress, keep your rewrite local, and report.
 
 ## Conflicts
 
