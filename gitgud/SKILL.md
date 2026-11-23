@@ -8,6 +8,8 @@ description: >-
 
 Work reaches protected branches only through PRs. It is done on task branches with linear, rebase-based history, and each logical change is committed and pushed as soon as its checks pass, without asking first.
 
+The repository's own instructions and the user's explicit instructions override the defaults below. The Never list is the exception: it gives way only to an instruction from the user that names the specific branch or action.
+
 ## Never
 
 - Commit to, push to, or rewrite `main`, `master`, `production`, `staging`, or any other branch the repository protects. Other people deploy and branch from these.
@@ -20,6 +22,8 @@ Work reaches protected branches only through PRs. It is done on task branches wi
 ## Start
 
 Run `git status` and `git branch --show-current`. If a merge, rebase, cherry-pick, or similar operation is already in progress and you did not start it, stop and report it. Neither continue nor abort it: someone else is midway through it.
+
+If `HEAD` is detached, create a branch as described below before committing, so the commits are not left unreachable. If the repository has no remote, commit locally, skip the fetch and push steps, and say so in your report.
 
 ## Choose the branch
 
@@ -42,7 +46,7 @@ Fetch `origin` and any other relevant remote before editing, then bring the bran
 - Diverged: rebase your own unpublished commits onto the remote tip. If the remote was rewritten, or the rebase would rewrite commits that are already published, stop and report instead.
 - Not pushed yet: bring it up to date with the latest tip of its base.
 
-If the branch has an open PR (`gh pr view`), also fetch the PR's actual base. When the branch is behind it, rebase onto it; on a shared branch, report the lag instead and continue from the synced head. If the base cannot be determined, say so and sync only against the branch's own remote.
+If the branch has an open PR (`gh pr view`), also fetch the PR's actual base. Rebase onto it only when the PR conflicts with the base, the repository requires an up-to-date branch to merge, or the user asks. Otherwise report how far behind it is and carry on: every rebase of a pushed PR forces a push that reruns CI and loses reviewers their place. On a shared branch, report the lag and continue from the synced head even then. If the base cannot be determined, say so and sync only against the branch's own remote.
 
 Uncommitted work must come through the sync intact. If the sync cannot complete, do not start editing; report what blocked it.
 
@@ -54,10 +58,10 @@ Do this for each logical change as soon as it is finished:
 2. Run the required checks: the tests, lint, typecheck, and build that the repository documents or its CI runs for the files touched. If you can find none, say so in your report.
 3. Commit, following the repository's conventions. Each commit is one complete logical change; do not commit unfinished work just to save progress. If a hook edits files, review its edits and re-stage only the ones that belong.
 4. Repeat Sync. If it changed the branch, rerun the checks on the result.
-5. Check the remote, the destination, and the outgoing commits before pushing: `git push origin HEAD:main` targets `main` whatever branch you are on. Set upstream on the first push (`-u`).
+5. Check the remote, the destination, and the outgoing commits before pushing: `git push origin HEAD:main` targets `main` whatever branch you are on. Set upstream on the first push (`-u`). If the push is denied, or `origin` is not the user's to write to, keep the commits local and report; never fork or push to another remote unasked.
 6. Verify with `git log -1 --stat`, `git status`, and the push output.
 
-At the end of the task, repeat Sync and check the result once more.
+At the end of the task, repeat Sync and check the result once more. Pushing the branch is where this ends: open a PR only when asked.
 
 ## Rewriting published history
 
