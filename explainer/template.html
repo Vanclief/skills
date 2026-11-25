@@ -1,0 +1,430 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Source and number: the subject in a few words</title>
+<!--
+  Template for the explainer skill.
+  Keep the <style> block as it is. Replace everything in <body>: the filler text
+  says what goes in each place and never ships. Delete the components the
+  subject does not need. Add a class only when no component here fits.
+-->
+<style>
+  :root {
+    --ink: #1f2937;
+    --muted: #64748b;
+    --line: #e2e8f0;
+    --bg: #f5f6f8;
+    --card: #ffffff;
+    /* problem */
+    --bad: #c2410c;
+    --bad-bg: #fff1e8;
+    --bad-line: #fdba74;
+    /* changed or fixed by this change */
+    --good: #15803d;
+    --good-bg: #e9f7ee;
+    --good-line: #86d19e;
+    /* open: not tested, not decided, or the reader's to do */
+    --open: #b45309;
+    --open-bg: #fffaf0;
+    --open-line: #d97706;
+    /* our own system, in diagrams */
+    --own: #eef2f8;
+    --own-line: #94a3b8;
+    --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font: 16px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, Helvetica, Arial, sans-serif;
+  }
+  .wrap { max-width: 1240px; margin: 0 auto; padding: 40px 28px 80px; }
+  header h1 { font-size: 30px; line-height: 1.25; margin: 0 0 6px; letter-spacing: -0.01em; }
+  header .source { color: var(--muted); font-size: 14px; margin: 0 0 18px; }
+  .lead { font-size: 19px; max-width: 1000px; margin: 0 0 8px; }
+  .legend { display: flex; flex-wrap: wrap; gap: 18px; font-size: 14px; color: var(--muted); margin-top: 14px; }
+  .legend span::before { content: ""; display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+  .legend .lb::before { background: var(--bad-bg); border: 1.5px solid var(--bad); }
+  .legend .lg::before { background: var(--good-bg); border: 1.5px solid var(--good); }
+  .legend .lo::before { background: var(--open-bg); border: 1.5px dashed var(--open-line); }
+
+  section { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 26px 30px 28px; margin: 22px 0; }
+  h2 { font-size: 21px; margin: 0 0 4px; display: flex; align-items: center; gap: 12px; }
+  h2 .n { flex: none; width: 30px; height: 30px; border-radius: 50%; background: var(--ink); color: #fff; font-size: 15px; display: inline-flex; align-items: center; justify-content: center; }
+  h2 .n.bad { background: var(--bad); }
+  h2 .n.good { background: var(--good); }
+  h2 .n.grey { background: #94a3b8; }
+  .sub { color: var(--muted); margin: 0 0 18px 42px; font-size: 15px; }
+  p { margin: 10px 0; }
+  code, .mono { font-family: var(--mono); font-size: 0.92em; }
+  .code { font-family: var(--mono); background: #f1f5f9; border-radius: 5px; padding: 1px 6px; }
+  .bad-t { color: var(--bad); font-weight: 600; }
+  .good-t { color: var(--good); font-weight: 600; }
+  .small { font-size: 13.5px; color: var(--muted); }
+
+  /* table.row: one real record, the cells that matter marked */
+  table.row { border-collapse: collapse; width: 100%; font-size: 15px; margin-top: 8px; }
+  table.row th { font-family: var(--mono); font-weight: 500; font-size: 13px; color: var(--muted); text-align: left; background: #f8fafc; border: 1px solid var(--line); padding: 7px 12px; }
+  table.row td { font-family: var(--mono); border: 1px solid var(--line); padding: 11px 12px; }
+  table.row td.bad { background: var(--bad-bg); border: 2px solid var(--bad); color: var(--bad); font-weight: 700; }
+  table.row td.good { background: var(--good-bg); border: 2px solid var(--good); color: var(--good); font-weight: 700; }
+  .empty { font-style: italic; font-weight: 500; }
+  .rowcap { font-size: 13.5px; color: var(--muted); margin-top: 8px; }
+
+  /* svg.dia: a diagram on a 1200-wide viewBox */
+  svg.dia { width: 100%; height: auto; display: block; margin-top: 6px; }
+  svg.dia text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, Helvetica, Arial, sans-serif; fill: var(--ink); }
+  svg.dia .h { font-size: 16px; font-weight: 650; }   /* name of a box */
+  svg.dia .s { font-size: 12.5px; fill: var(--muted); } /* small label */
+  svg.dia .b { font-size: 13.5px; }                    /* body text */
+  svg.dia .m { font-family: var(--mono); font-size: 13px; }  /* a real value */
+  svg.dia .ms { font-family: var(--mono); font-size: 12px; }
+  svg.dia .c { text-anchor: middle; }
+  svg.dia .r { text-anchor: end; }
+  svg.dia .o { fill: var(--bad); }
+  svg.dia .g { fill: var(--good); }
+  svg.dia .mu { fill: var(--muted); }
+  svg.dia .w { fill: #fff; }
+  svg.dia .bold { font-weight: 700; }
+  svg.dia .it { font-style: italic; }
+  svg.dia .own { fill: var(--own); stroke: var(--own-line); stroke-width: 1.5; }  /* our system */
+  svg.dia .ext { fill: #f8fafc; stroke: #94a3b8; stroke-width: 1.5; }             /* a person, device or other system */
+  svg.dia .card { fill: #fff; stroke: #cbd5e1; stroke-width: 1.2; }               /* a thing inside a box */
+  svg.dia .spot-bad { fill: #fff7f1; stroke: var(--bad); stroke-width: 2.5; }     /* the box where it goes wrong */
+  svg.dia .spot-good { fill: #f5fbf7; stroke: var(--good); stroke-width: 2.5; }   /* the box the change touches */
+  svg.dia .hl-good { fill: var(--good-bg); }                                      /* a changed line inside a card */
+  svg.dia .pill-good { fill: var(--good); }
+  svg.dia .ar { fill: none; stroke: #64748b; stroke-width: 2; }
+  svg.dia .aro { fill: none; stroke: var(--bad); stroke-width: 2; }
+  svg.dia .arg { fill: none; stroke: var(--good); stroke-width: 2; }
+  svg.dia .sep { stroke: #e2e8f0; stroke-width: 1; }
+  svg.dia .cell { fill: #fff; stroke: #cbd5e1; stroke-width: 1; }
+  svg.dia .cellh { fill: #f8fafc; stroke: #cbd5e1; stroke-width: 1; }
+  svg.dia .cellbad { fill: var(--bad-bg); stroke: var(--bad); stroke-width: 2; }
+  svg.dia .cellgood { fill: var(--good-bg); stroke: var(--good); stroke-width: 2; }
+
+  /* .flow: a short chain of boxes, in HTML, so the text wraps by itself */
+  .flow { display: flex; align-items: stretch; gap: 0; margin: 14px 0 6px; }
+  .flow .box { flex: 1; border: 1.5px solid var(--line); border-radius: 10px; padding: 12px 16px; background: #fbfcfd; }
+  .flow .box.bad { border-color: var(--bad); background: var(--bad-bg); }
+  .flow .box.good { border-color: var(--good); background: var(--good-bg); }
+  .flow .arrow { flex: none; width: 46px; display: flex; align-items: center; justify-content: center; color: var(--muted); font-size: 24px; }
+  .flow .lbl { font-size: 12.5px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 4px; }
+  .flow .val { font-family: var(--mono); font-size: 17px; font-weight: 600; }
+
+  /* .figs: big numbers */
+  .figs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+  .fig { border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; background: #fbfcfd; }
+  .fig .num { font-size: 40px; font-weight: 700; line-height: 1.05; letter-spacing: -0.02em; }
+  .fig .num small { font-size: 20px; font-weight: 600; color: var(--muted); }
+  .fig .what { font-size: 15px; margin-top: 6px; }
+  .fig.bad { border-color: var(--bad-line); background: var(--bad-bg); }
+  .fig.bad .num { color: var(--bad); }
+  .fig .tag { display: inline-block; font-family: var(--mono); font-size: 12.5px; background: #fff; border: 1px solid var(--line); border-radius: 5px; padding: 0 6px; }
+
+  /* .parts: the named parts of the change */
+  .parts { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 20px; }
+  .part { border: 1.5px solid var(--good-line); border-radius: 12px; padding: 16px 20px; background: #fbfefc; }
+  .part h3 { margin: 0 0 8px; font-size: 17px; display: flex; gap: 10px; align-items: center; }
+  .pill { flex: none; display: inline-block; background: var(--good); color: #fff; font-size: 12.5px; font-weight: 700; border-radius: 20px; padding: 2px 10px; }
+  .part ul, .notin ul { margin: 6px 0 0; padding-left: 20px; }
+  .part li, .notin li { margin: 5px 0; }
+
+  /* .facts: what stays the same */
+  .facts { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
+  .facts span { border: 1px solid var(--good-line); background: var(--good-bg); color: #14532d; border-radius: 20px; padding: 4px 12px; font-size: 14px; }
+
+  /* table.ba: before and after, for the example */
+  table.ba { border-collapse: collapse; width: 100%; font-size: 16px; }
+  table.ba th, table.ba td { border-bottom: 1px solid var(--line); padding: 12px 14px; text-align: left; vertical-align: top; }
+  table.ba thead th { font-size: 14px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; border-bottom: 2px solid var(--line); }
+  table.ba tbody th { font-weight: 600; width: 26%; }
+  table.ba td.same { color: var(--muted); }
+  table.ba td.was { color: var(--bad); background: var(--bad-bg); }
+  table.ba td.now { color: var(--good); background: var(--good-bg); font-weight: 600; }
+
+  /* .steps: what happens, in order. .callout: open, or the reader's to do */
+  .steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; margin-top: 16px; }
+  .step { position: relative; padding: 0 18px 0 0; }
+  .step .dot { width: 34px; height: 34px; border-radius: 50%; background: var(--ink); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; position: relative; z-index: 1; }
+  .step.open .dot { background: var(--open); }
+  .step::before { content: ""; position: absolute; top: 16px; left: 34px; right: 0; height: 2px; background: var(--line); }
+  .step:last-child::before { display: none; }
+  .step h4 { margin: 12px 0 4px; font-size: 16px; }
+  .step p { margin: 4px 0; font-size: 15px; }
+  .step .who { display: inline-block; font-size: 12.5px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+  .callout { margin-top: 20px; border: 1.5px dashed var(--open-line); background: var(--open-bg); border-radius: 12px; padding: 14px 18px; }
+  .callout b { color: var(--open); }
+
+  .notin { background: #fafafa; }
+  .notin li b { font-weight: 600; }
+
+  @media (max-width: 900px) {
+    .parts { grid-template-columns: 1fr; }
+    .figs { grid-template-columns: 1fr 1fr; }
+    .steps { grid-template-columns: 1fr 1fr; row-gap: 22px; }
+    .flow { flex-direction: column; }
+    .flow .arrow { width: auto; height: 34px; transform: rotate(90deg); }
+  }
+</style>
+</head>
+<body>
+
+<!-- Arrowheads, defined once and used by every diagram on the page.
+     A drawing repeated across diagrams (a phone, a QR, a face) goes here too, as a <symbol>. -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#64748b"/></marker>
+    <marker id="ah-bad" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#c2410c"/></marker>
+    <marker id="ah-good" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#15803d"/></marker>
+  </defs>
+</svg>
+
+<div class="wrap">
+
+<header>
+  <p class="source">Where this comes from: issue or pull request number &middot; its title as written there</p>
+  <h1>The question the reader would ask? Today's answer, in their words.</h1>
+  <p class="lead">Two or three sentences. What happens, to <b>whom</b>, and why it matters. Who reported it, if that helps.</p>
+  <div class="legend"><span class="lb">problem</span><span class="lg">changed by this</span><span class="lo">open, or yours to do</span></div>
+</header>
+
+<!-- table.row: the symptom, as the reader sees it -->
+<section>
+  <h2><span class="n bad">1</span>What the reader sees today, stated as a finding</h2>
+  <p class="sub">One line. A real record, with the wrong cells marked.</p>
+  <table class="row">
+    <thead><tr><th>field</th><th>field</th><th>field</th><th>field_at_fault</th></tr></thead>
+    <tbody><tr><td>real value</td><td>real value</td><td>real value</td><td class="bad"><span class="empty">(empty)</span></td></tr></tbody>
+  </table>
+  <p class="rowcap">Name the one example the page follows from start to end: <span class="code">its-real-id</span>, and where it is from.</p>
+</section>
+
+<!-- svg.dia: the flow. Draw it once, then repeat the same layout for every state:
+     when it works, when it fails, after the change. Only what differs gets a colour.
+
+     Sizes on the 1200-wide viewBox. SVG text does not wrap, so break lines by hand.
+       .h 16px: about 9px per character      .b 13.5px: about 7px per character
+       .s 12.5px: about 6.5px per character  .m 13px mono: about 8px per character
+     Keep 16px between a box edge and its text, and end an arrow 4px before the box it points at.
+     Set the viewBox height to the lowest thing drawn plus 10. -->
+<section>
+  <h2><span class="n bad">2</span>Where it goes wrong, stated as a finding</h2>
+  <p class="sub">One line that the picture cannot say.</p>
+
+  <svg class="dia" viewBox="0 0 1200 400" role="img" aria-label="The story of this picture in one sentence, with its real values.">
+
+    <!-- who starts it -->
+    <rect x="40" y="40" width="200" height="220" rx="12" class="ext"/>
+    <text x="60" y="68" class="h">Who starts it</text>
+    <text x="60" y="88" class="s">person, app or system</text>
+    <!-- a small drawing goes above the value when it makes the thing recognisable: a face, a phone, a QR -->
+    <text x="140" y="150" class="m c bold">real-value</text>
+    <text x="140" y="172" class="s c">what they hold or show</text>
+
+    <text x="310" y="120" class="s c">what is sent</text>
+    <text x="310" y="138" class="ms c bold">real-value</text>
+    <path d="M240 150 H376" class="ar" marker-end="url(#ah)"/>
+
+    <!-- what is in between, with what it holds -->
+    <rect x="380" y="40" width="300" height="220" rx="12" class="ext"/>
+    <text x="400" y="68" class="h">What is in between</text>
+    <text x="660" y="68" class="s r">its real name</text>
+    <rect x="400" y="82" width="260" height="160" rx="8" class="card"/>
+    <text x="416" y="104" class="b bold">What it holds</text>
+    <line x1="400" y1="116" x2="660" y2="116" class="sep"/>
+    <text x="416" y="140" class="s">a field</text>
+    <text x="644" y="140" class="m r bold">real-value</text>
+    <line x1="400" y1="152" x2="660" y2="152" class="sep"/>
+    <text x="416" y="176" class="s">another field</text>
+    <text x="644" y="176" class="b r">in plain words</text>
+    <line x1="400" y1="188" x2="660" y2="188" class="sep"/>
+    <text x="416" y="212" class="s">the field at fault</text>
+    <text x="644" y="212" class="m r bold o">wrong-value</text>
+
+    <text x="788" y="120" class="s c">what it reports</text>
+    <text x="788" y="138" class="ms c bold o">wrong-value</text>
+    <path d="M680 150 H896" class="ar" marker-end="url(#ah)"/>
+
+    <!-- something that should happen and does not: drawn dim and crossed, never left out -->
+    <g opacity="0.55">
+      <path d="M700 192 v40 a60 9 0 0 0 120 0 v-40" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.5"/>
+      <ellipse cx="760" cy="192" rx="60" ry="9" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.5"/>
+      <text x="760" y="224" class="b c">what knows</text>
+    </g>
+    <path d="M896 216 H826" class="aro" stroke-dasharray="5 4"/>
+    <path d="M854 207 l12 18 M866 207 l-12 18" stroke="#c2410c" stroke-width="2.5" stroke-linecap="round"/>
+    <text x="760" y="264" class="s c o bold">never asked</text>
+
+    <!-- the exact spot -->
+    <text x="1030" y="26" class="s c o bold">where it goes wrong</text>
+    <rect x="900" y="40" width="260" height="220" rx="12" class="spot-bad"/>
+    <text x="920" y="68" class="h">Our system</text>
+    <rect x="920" y="82" width="220" height="56" rx="8" class="card"/>
+    <text x="1030" y="106" class="b c">The one question</text>
+    <text x="1030" y="126" class="b c">this step asks</text>
+    <text x="1030" y="170" class="b c o bold">Its answer: <tspan class="m">wrong-value</tspan></text>
+    <text x="1030" y="192" class="s c o">why that answer is wrong</text>
+    <text x="1030" y="226" class="b c">so it does this</text>
+
+    <!-- what comes out: the same record as section 1 -->
+    <path d="M1030 260 V316" class="aro" marker-end="url(#ah-bad)"/>
+    <text x="40" y="310" class="b bold">What is saved or shown</text>
+    <rect x="40" y="320" width="280" height="28" class="cellh"/><text x="180" y="339" class="ms c mu">field</text>
+    <rect x="320" y="320" width="280" height="28" class="cellh"/><text x="460" y="339" class="ms c mu">field</text>
+    <rect x="600" y="320" width="280" height="28" class="cellh"/><text x="740" y="339" class="ms c mu">field</text>
+    <rect x="880" y="320" width="280" height="28" class="cellh"/><text x="1020" y="339" class="ms c mu">field_at_fault</text>
+    <rect x="40" y="348" width="280" height="40" class="cell"/><text x="180" y="373" class="m c">real value</text>
+    <rect x="320" y="348" width="280" height="40" class="cell"/><text x="460" y="373" class="m c">real value</text>
+    <rect x="600" y="348" width="280" height="40" class="cell"/><text x="740" y="373" class="m c">real value</text>
+    <rect x="880" y="348" width="280" height="40" class="cellbad"/><text x="1020" y="373" class="b c o it">(empty)</text>
+  </svg>
+  <p class="small">One fact the picture needs and cannot show, if there is one.</p>
+</section>
+
+<!-- .flow: a short chain with no branches -->
+<section>
+  <h2><span class="n bad">3</span>A smaller case, stated as a finding</h2>
+  <p class="sub">How rare it is, in one line.</p>
+  <div class="flow">
+    <div class="box">
+      <div class="lbl">what comes in</div>
+      <div class="val">real-value</div>
+      <div class="small">say so here if the value is made up</div>
+    </div>
+    <div class="arrow">&rarr;</div>
+    <div class="box">
+      <div class="lbl">the question asked</div>
+      <div class="val bad-t">The answer</div>
+      <div class="small">what follows from it</div>
+    </div>
+    <div class="arrow">&rarr;</div>
+    <div class="box bad">
+      <div class="lbl">what comes out</div>
+      <div class="val bad-t">field = wrong-value</div>
+      <div class="small">why that is wrong</div>
+    </div>
+  </div>
+</section>
+
+<!-- .figs: how often, how many, how much -->
+<section>
+  <h2><span class="n">4</span>How often: the period and the place</h2>
+  <p class="sub">Read on the date you read it.</p>
+  <div class="figs">
+    <div class="fig bad">
+      <div class="num">000</div>
+      <div class="what">What this number counts, in one line.</div>
+    </div>
+    <div class="fig">
+      <div class="num">00 <small>of 00</small></div>
+      <div class="what">A share, with its whole. Not confirmed? Say so here.</div>
+    </div>
+    <div class="fig">
+      <div class="num">0 <small>things</small></div>
+      <div class="what">A count with its unit, and a status as a <span class="tag">tag</span>.</div>
+    </div>
+  </div>
+</section>
+
+<!-- after the change: the same diagram again, the parts labelled where they act
+     (.spot-good on the box, .hl-good behind a changed line, a pill above it:
+        <rect x="986" y="8" width="88" height="24" rx="12" class="pill-good"/>
+        <text x="1030" y="25" class="c w bold" style="font-size:12.5px">Part 1</text>),
+     then one .part per part and the .facts that stay the same -->
+<section>
+  <h2><span class="n good">5</span>After the change: the same picture</h2>
+  <p class="sub">How many parts, and where each one acts.</p>
+
+  <!-- the svg from section 2, repeated with the same positions -->
+
+  <div class="parts">
+    <div class="part">
+      <h3><span class="pill">Part 1</span>What this part does, in a few words</h3>
+      <ul>
+        <li>What it does to the example: <span class="code">wrong-value</span> becomes <span class="code good-t">right-value</span>.</li>
+        <li>A condition or a reason the picture cannot show.</li>
+        <li>Four bullets at most.</li>
+      </ul>
+    </div>
+    <div class="part">
+      <h3><span class="pill">Part 2</span>What this part does, in a few words</h3>
+      <ul>
+        <li>What stays as it is for the people using it.</li>
+        <li>Which case can no longer happen, and why.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="facts">
+    <span>No new column</span>
+    <span>No API change</span>
+    <span>Something the reader feared would change, and does not</span>
+  </div>
+</section>
+
+<!-- table.ba: one line per thing the reader can observe -->
+<section>
+  <h2><span class="n">6</span>Before and after, for the example</h2>
+  <p class="sub">The example again: <span class="code">its-real-id</span>, and where it is from.</p>
+  <table class="ba">
+    <thead><tr><th></th><th>Today</th><th>After</th></tr></thead>
+    <tbody>
+      <tr><th>Something that stays</th><td class="mono">real-value</td><td class="same"><span class="mono">real-value</span> (same)</td></tr>
+      <tr><th>Something that changes</th><td class="mono">old-value</td><td class="now mono">new-value</td></tr>
+      <tr><th>Something that was wrong</th><td class="was"><i>empty</i></td><td class="now">what it holds now</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- .steps and .callout: what happens next, and what is the reader's -->
+<section>
+  <h2><span class="n">7</span>What happens on release</h2>
+  <p class="sub">In order.</p>
+  <div class="steps">
+    <div class="step open">
+      <div class="dot">1</div>
+      <h4>A step not done yet</h4>
+      <p><span class="who">who does it</span></p>
+      <p>What is tried, and where.</p>
+    </div>
+    <div class="step">
+      <div class="dot">2</div>
+      <h4>Release</h4>
+      <p>What is true from this moment on.</p>
+    </div>
+    <div class="step">
+      <div class="dot">3</div>
+      <h4>What follows by itself</h4>
+      <p>What it touches, and how many: <b>00 things</b> today.</p>
+      <p class="small">What a user could notice while it runs.</p>
+    </div>
+    <div class="step">
+      <div class="dot">4</div>
+      <h4>A step done by hand</h4>
+      <p><span class="who">who does it</span></p>
+      <p>What it does, and that it runs once.</p>
+    </div>
+  </div>
+  <div class="callout">
+    <b>Not tested yet:</b> what, and which step covers it. Use one callout for each thing that is open or that the reader has to do or decide.
+  </div>
+</section>
+
+<!-- .notin: the edges of the change -->
+<section class="notin">
+  <h2><span class="n grey">8</span>Not in this change</h2>
+  <ul>
+    <li><b>A related thing left out.</b> Why, in one or two sentences, and where it goes instead.</li>
+  </ul>
+  <p style="margin-top:16px"><b>Considered and dropped</b></p>
+  <ul>
+    <li>The other way to do it: the one reason it does not work.</li>
+  </ul>
+</section>
+
+</div>
+</body>
+</html>
